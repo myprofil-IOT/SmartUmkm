@@ -5,3 +5,21 @@
 html {
   scroll-behavior: smooth;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.8); }
+  to { transform: scale(1); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-in-out;
+}

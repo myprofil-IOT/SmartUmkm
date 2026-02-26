@@ -63,14 +63,13 @@ function Home() {
             Pelajari Lebih Lanjut
           </button>
 
-          <button
-            onClick={() => navigate("/register")}
-            className="bg-blue-800 px-6 py-3 rounded-lg font-semibold hover:bg-blue-900 transition"
-          >
-            Daftar Sekarang
-          </button>
-        </div>
-      </section>
+          <button 
+          onClick={() => navigate("/shop")} 
+          className="bg-blue-800 px-6 py-3 rounded-lg font-semibold hover:bg-blue-900 transition" > 
+          Kunjungi Shop 
+          </button> 
+          </div> 
+          </section>
       </section>
 
       {/* KATEGORI */}

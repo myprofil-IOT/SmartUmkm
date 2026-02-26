@@ -4,13 +4,22 @@ import { saveAs } from "file-saver"
 import toast from "react-hot-toast"
 import { useAuth } from "../context/AuthContext"
 import { logActivity } from "../utils/activityLogger"
+import { useRef } from "react"
+
+const formatRupiah = (number) => {
+  if (!number) return "Rp 0"
+  return "Rp " + new Intl.NumberFormat("id-ID").format(Number(number))
+}
 
 function Products() {
   const { user } = useAuth()
+  const fileInputRef = useRef(null)
 
   const [products, setProducts] = useState([])
   const [name, setName] = useState("")
   const [price, setPrice] = useState("")
+  const [stock, setStock] = useState("")
+  const [discount, setDiscount] = useState("")
   const [category, setCategory] = useState("")
   const [image, setImage] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -19,20 +28,45 @@ function Products() {
   const [filterCategory, setFilterCategory] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false) 
+  const [isDragging, setIsDragging] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
 
+ const handleCancelImage = () => {
+  setImage(null)
+  setPreview(null)
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = ""
+  }
+}
+
+  // 🔥 TAMBAHAN - drag & drop upload
+const handleDrop = (e) => {
+  e.preventDefault()
+  setIsDragging(false)
+
+  const file = e.dataTransfer.files[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onloadend = () => {
+    setImage(reader.result)
+    setPreview(reader.result)
+  }
+  reader.readAsDataURL(file)
+}
+
   const productsPerPage = 5
-  const categories = ["Makanan", "Minuman", "Fashion", "Elektronik", "Lainnya"]
+const categories = ["Makanan", "Minuman", "Fashion", "Elektronik", "Lainnya"]
 
-  useEffect(() => {
-    const saved = localStorage.getItem("products")
-    if (saved) setProducts(JSON.parse(saved))
-  }, [])
-
+useEffect(() => {
+const saved = JSON.parse(localStorage.getItem("products")) || []
+setProducts(saved)
+}, [])
   useEffect(() => {
     localStorage.setItem("products", JSON.stringify(products))
-    window.dispatchEvent(new Event("productsUpdated"))
+    window.dispatchEvent(new Event("productsUpdated")) // Notifikasi ke Shop.jsx / DashboardHome.jsx
   }, [products])
 
   useEffect(() => {
@@ -56,20 +90,28 @@ function Products() {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    if (!name || !price || !category) {
-      toast.error("Semua field wajib diisi!")
-      return
-    }
+    if (!name || !price || !category || stock === "" || discount === "") {
+  toast.error("Semua field wajib diisi!")
+  return
+}
+
+// 🔥 TAMBAHAN - stok tidak boleh 0 jika ada diskon
+if (Number(discount) > 0 && Number(stock) === 0) {
+  toast.error("Produk diskon tidak boleh stok 0!")
+  return
+}
 
     const newProduct = {
       id: Date.now(),
       name,
-      price: Number(price),
+      price: Number(price.replace(/\./g, "")),
+stock: Math.max(0, Number(stock)),
+discount: Math.min(100, Math.max(0, Number(discount))),      
       category,
       image
     }
 
-    setProducts([...products, newProduct])
+    setProducts([newProduct, ...products])
 
     // 🔥 LOG TAMBAH
     logActivity(user, `Menambahkan produk ${name}`)
@@ -78,6 +120,8 @@ function Products() {
 
     setName("")
     setPrice("")
+    setStock("")
+    setDiscount("")
     setCategory("")
     setImage(null)
     setPreview(null)
@@ -101,15 +145,26 @@ function Products() {
   // ================= EDIT =================
   const handleEditClick = (product) => {
     setSelectedProduct(product)
+     setPreview(product.image)
     setIsModalOpen(true)
   }
 
   // ================= UPDATE PRODUCT =================
   const handleUpdateProduct = () => {
-    if (!selectedProduct.name || !selectedProduct.price || !selectedProduct.category) {
-      toast.error("Semua field wajib diisi!")
-      return
-    }
+  if (
+  !selectedProduct ||
+  !selectedProduct.name ||
+  !selectedProduct.price ||
+  !selectedProduct.category
+  ) {
+    toast.error("Semua field wajib diisi!")
+    return
+  }
+
+  // 🔥 TAMBAHAN - pastikan harga number
+  selectedProduct.price = Number(
+    selectedProduct.price.toString().replace(/\./g, "")
+  )
 
     const updated = products.map((p) =>
       p.id === selectedProduct.id ? selectedProduct : p
@@ -219,20 +274,55 @@ function Products() {
           <input
             type="text"
             placeholder="Nama Produk"
-            className="border p-2 rounded w-full md:w-1/4 dark:bg-gray-700"
+            className="border p-2 rounded w-full md:w-1/5 dark:bg-gray-700"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
-          <input
-            type="number"
-            placeholder="Harga"
-            className="border p-2 rounded w-full md:w-1/4 dark:bg-gray-700"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
+          {/* 🔥 DIUBAH - harga auto format Indonesia */}
+      <input
+          type="text"
+          placeholder="Harga"
+          className="border p-2 rounded w-full md:w-1/5 dark:bg-gray-700"
+          value={price}
+          onChange={(e) => {
+          let raw = e.target.value.replace(/\D/g, "")
+          if (!raw) {
+          setPrice("")
+      return
+    }
+        setPrice(new Intl.NumberFormat("id-ID").format(raw))
+    }}
+  />
 
-          <select
+      {/* 🔥 DIUBAH - stok tidak bisa minus */}
+    <input
+      type="number"
+      min="0"
+      placeholder="Stok"
+      className="border p-2 rounded w-full md:w-1/5 dark:bg-gray-700"
+      value={stock}
+      onChange={(e) =>
+      setStock(Math.max(0, Number(e.target.value)))
+    }
+  />
+
+        {/* 🔥 DIUBAH - diskon 0-100 */}
+    <input
+      type="number"
+      min="0"
+      max="100"
+      placeholder="Diskon %"
+      className="border p-2 rounded w-full md:w-1/5 dark:bg-gray-700"
+      value={discount}
+      onChange={(e) =>
+      setDiscount(
+      Math.min(100, Math.max(0, Number(e.target.value)))
+    )
+  }
+/>         
+
+      <select
             className="border p-2 rounded w-full md:w-1/4 dark:bg-gray-700"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -242,13 +332,29 @@ function Products() {
               <option key={cat}>{cat}</option>
             ))}
           </select>
+<div
+  onDragOver={(e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }}
+  onDragLeave={() => setIsDragging(false)}
+  onDrop={handleDrop}
+  className={`border-2 border-dashed p-4 rounded w-full md:w-1/5 text-center cursor-pointer 
+  ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-400"}`}
+>
+  <input
+  type="file"
+  accept="image/*"
+  ref={fileInputRef}   
+  onChange={handleImageChange}
+  className="hidden"
+  id="upload"
+/>
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full md:w-1/4"
-          />
+  <label htmlFor="upload" className="cursor-pointer block">
+    📸 Klik atau Drag Gambar
+  </label>
+</div>
 
           <button
             type="submit"
@@ -259,33 +365,79 @@ function Products() {
         </div>
 
         {preview && (
-          <img
-            src={preview}
-            alt="Preview"
-            className="mt-4 w-32 h-32 object-cover rounded"
-          />
-        )}
+  <div className="flex flex-col items-center gap-2 mt-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+    <img
+      src={preview}
+      className="w-32 h-32 object-cover rounded"
+      alt="Preview"
+    />
+
+    <button
+      type="button"
+      onClick={handleCancelImage}
+      className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+    >
+      Hapus Gambar
+    </button>
+  </div>
+)}
       </form>
 
       {/* LIST */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-        {currentProducts.length === 0 ? (
-          <p className="text-gray-500">Produk tidak ditemukan</p>
+            {currentProducts.length === 0 ? (
+                <p className="text-gray-500">Produk tidak ditemukan</p>
         ) : (
-          <ul className="space-y-4">
-            {currentProducts.map((product) => (
-              <li
-                key={product.id}
-                className="flex justify-between items-center border-b pb-4"
-              >
-                <div>
-                  <p className="font-semibold">{product.name}</p>
-                  <p className="text-sm text-gray-500">
-                    Rp {product.price}
-                  </p>
-                  <p className="text-xs text-blue-500">
-                    {product.category}
-                  </p>
+        <ul className="space-y-4">
+          {currentProducts.map((product) => (
+    <li
+        key={product.id}
+          className="flex justify-between items-center border-b pb-4"
+    >
+    <div className="flex items-center gap-4">
+
+  {product.image && (
+    <img
+      src={product.image}
+      alt={product.name}
+      className="w-16 h-16 object-cover rounded shadow"
+    />
+  )}
+
+  <div>
+    <p className="font-semibold">{product.name}</p>
+
+      <div className="mt-1">
+
+  {product.discount > 0 && (
+    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded mr-2">
+      -{product.discount}%
+    </span>
+  )}
+
+  <p className="text-sm">
+
+          {product.discount > 0 ? (
+    <>
+        <span className="line-through text-red-400 mr-2">
+            {formatRupiah(product.price)}
+    </span>
+        <span className="text-green-600 font-semibold">
+          {formatRupiah(
+          product.price -
+            (product.price * product.discount) / 100
+        )}
+        </span>
+          </>
+          ) : (
+            <span className="font-semibold">
+            {formatRupiah(product.price)}
+            </span>
+          )}
+      </p>
+      </div>
+              <p className="text-xs text-gray-500">Stok: {product.stock}</p>
+
                 </div>
 
                 <div className="flex gap-2">
@@ -303,10 +455,12 @@ function Products() {
                     Hapus
                   </button>
                 </div>
+                </div>
               </li>
             ))}
           </ul>
         )}
+        
       </div>
 
     </div>
@@ -314,3 +468,5 @@ function Products() {
 }
 
 export default Products
+
+
