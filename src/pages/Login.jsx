@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import { logActivity } from "../utils/activityLogger"
 
@@ -11,14 +11,44 @@ function Login() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
 
+  useEffect(() => {
+  const existingUsers =
+    JSON.parse(localStorage.getItem("users")) || []
+
+  const adminExists = existingUsers.find(
+    (u) => u.email === "admin@gmail.com"
+  )
+
+  if (!adminExists) {
+    const defaultUsers = [
+      {
+        id: 1,
+        name: "Admin",
+        email: "admin@gmail.com",
+        password: "1234",
+        role: "admin"
+      },
+      {
+        id: 2,
+        name: "Staff",
+        email: "staff@gmail.com",
+        password: "2222",
+        role: "staff"
+      }
+    ]
+
+    localStorage.setItem(
+      "users",
+      JSON.stringify([...defaultUsers, ...existingUsers])
+    )
+  }
+}, [])
+
   const handleLogin = (e) => {
     e.preventDefault()
 
-    const users = [
-      { email: "admin@gmail.com", password: "1234", role: "admin", username: "Admin" },
-      { email: "staff@gmail.com", password: "2222", role: "staff", username: "Staff" },
-      { email: "user@gmail.com", password: "1111", role: "user", username: "User" }
-    ]
+    const users = 
+      JSON.parse(localStorage.getItem("users")) || []
 
     const foundUser = users.find(
       (u) => u.email === email && u.password === password
@@ -26,6 +56,7 @@ function Login() {
 
     if (foundUser) {
       login(foundUser)
+       localStorage.setItem("currentUser", JSON.stringify(foundUser))
 
       // 🔥 LOG ACTIVITY
       logActivity(foundUser, "Login ke sistem")

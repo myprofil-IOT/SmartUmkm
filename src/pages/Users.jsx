@@ -4,7 +4,6 @@ function Users() {
   const [users, setUsers] = useState([])
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState("staff")
 
   const [search, setSearch] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
@@ -16,15 +15,43 @@ function Users() {
 
   // ================= LOAD =================
   useEffect(() => {
-    const saved = localStorage.getItem("users")
-    if (saved) setUsers(JSON.parse(saved))
-  }, [])
+  const saved = JSON.parse(localStorage.getItem("users")) || []
+
+  // 🔥 pastikan admin & staff ada
+  const adminExists = saved.find(u => u.email === "admin@gmail.com")
+
+  if (!adminExists) {
+    const defaultUsers = [
+      {
+        id: 1,
+        name: "Admin",
+        email: "admin@gmail.com",
+        password: "1234",
+        role: "admin"
+      },
+      {
+        id: 2,
+        name: "Staff",
+        email: "staff@gmail.com",
+        password: "2222",
+        role: "staff"
+      }
+    ]
+
+    const updated = [...defaultUsers, ...saved]
+    localStorage.setItem("users", JSON.stringify(updated))
+    setUsers(updated)
+  } else {
+    setUsers(saved)
+  }
+}, [])
 
   // ================= SAVE =================
   useEffect(() => {
+  if (users.length > 0) {
     localStorage.setItem("users", JSON.stringify(users))
-    window.dispatchEvent(new Event("usersUpdated"))
-  }, [users])
+  }
+}, [users])
 
   // ================= ADD USER =================
   const handleSubmit = (e) => {
@@ -35,13 +62,13 @@ function Users() {
       id: Date.now(),
       name,
       email,
-      role
+      password: "123456", 
+      role: "user"
     }
 
     setUsers([...users, newUser])
     setName("")
     setEmail("")
-    setRole("staff")
   }
 
   // ================= DELETE =================
@@ -95,20 +122,6 @@ function Users() {
           <p className="text-sm text-gray-500">Total Users</p>
           <h2 className="text-2xl font-bold">{users.length}</h2>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow">
-          <p className="text-sm text-gray-500">Total Admin</p>
-          <h2 className="text-2xl font-bold">
-            {users.filter((u) => u.role === "admin").length}
-          </h2>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow">
-          <p className="text-sm text-gray-500">Total Staff</p>
-          <h2 className="text-2xl font-bold">
-            {users.filter((u) => u.role === "staff").length}
-          </h2>
-        </div>
       </div>
 
       {/* ================= SEARCH ================= */}
@@ -144,15 +157,6 @@ function Users() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="border p-2 rounded w-full md:w-1/4 dark:bg-gray-700"
-          >
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
-          </select>
 
           <button
             type="submit"
@@ -250,19 +254,9 @@ function Users() {
               className="border p-2 w-full mb-3 rounded"
             />
 
-            <select
-              value={selectedUser.role}
-              onChange={(e) =>
-                setSelectedUser({
-                  ...selectedUser,
-                  role: e.target.value
-                })
-              }
-              className="border p-2 w-full mb-4 rounded"
-            >
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
-            </select>
+            <p className="text-sm text-gray-500 mb-4">
+                Role: {selectedUser.role}
+            </p>
 
             <div className="flex justify-end gap-3">
               <button

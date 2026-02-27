@@ -64,10 +64,12 @@ function Shop() {
 
   const categories = ["Semua", "Makanan", "Minuman", "Fashion", "Elektronik", "Lainnya"];
 
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem("products");
-    return saved ? JSON.parse(saved) : []; // Kosong awal
-  });
+  const [products, setProducts] = useState([]);
+
+useEffect(() => {
+  const saved = localStorage.getItem("products");
+  setProducts(saved ? JSON.parse(saved) : []);
+}, []);
 
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem("cart");
@@ -83,9 +85,6 @@ function Shop() {
   const [showToast, setShowToast] = useState(false);
 
   // Simpan ke localStorage setiap update products atau cart
-  useEffect(() => {
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [products]);
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));

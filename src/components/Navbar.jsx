@@ -77,12 +77,26 @@ function Navbar() {
               </li>
             </>
           ) : (
-            <li>
-              <Link to="/login" className="hover:text-blue-600 dark:hover:text-yellow-400">
-                Login
-              </Link>
-            </li>
-          )}
+  <>
+    <li>
+      <Link 
+        to="/login" 
+        className="hover:text-red-600 dark:hover:text-yellow-400"
+      >
+        Login
+      </Link>
+    </li>
+
+    <li>
+      <Link 
+        to="/register" 
+        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+      >
+        Register
+      </Link>
+    </li>
+  </>
+)}
 
           {/* Dark Mode */}
           <button
@@ -142,12 +156,19 @@ function Navbar() {
               </li>
             </>
           ) : (
-            <li>
-              <Link to="/login" onClick={() => setIsOpen(false)}>
-                Login
-              </Link>
-            </li>
-          )}
+  <>
+    <li>
+      <Link to="/login" onClick={() => setIsOpen(false)}>
+        Login
+      </Link>
+    </li>
+
+    <li>
+      <Link to="/register" onClick={() => setIsOpen(false)}>
+        Register
+      </Link>
+    </li>
+  </>          )}
         </ul>
       )}
     </nav>

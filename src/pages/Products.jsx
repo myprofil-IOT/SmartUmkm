@@ -144,15 +144,13 @@ discount: Math.min(100, Math.max(0, Number(discount))),
 
   // ================= EDIT =================
   const handleEditClick = (product) => {
-    setSelectedProduct(product)
+    setSelectedProduct({...product})
      setPreview(product.image)
-    setIsModalOpen(true)
   }
 
   // ================= UPDATE PRODUCT =================
   const handleUpdateProduct = () => {
   if (
-  !selectedProduct ||
   !selectedProduct.name ||
   !selectedProduct.price ||
   !selectedProduct.category
@@ -160,6 +158,18 @@ discount: Math.min(100, Math.max(0, Number(discount))),
     toast.error("Semua field wajib diisi!")
     return
   }
+
+  const updatedProducts = products.map((p) =>
+    p.id === selectedProduct.id ? selectedProduct : p
+  )
+
+  setProducts(updatedProducts)
+
+  logActivity(user, `Mengupdate produk ${selectedProduct.name}`)
+
+  setSelectedProduct(null) // tutup form edit
+  toast.success("Produk berhasil diupdate 🎉")
+
 
   // 🔥 TAMBAHAN - pastikan harga number
   selectedProduct.price = Number(
@@ -462,6 +472,89 @@ discount: Math.min(100, Math.max(0, Number(discount))),
         )}
         
       </div>
+
+      {/* ================= EDIT FORM ================= */}
+{selectedProduct && (
+  <div className="bg-yellow-50 p-6 rounded-xl shadow-md mt-6">
+    <h2 className="text-lg font-bold mb-4">Edit Produk</h2>
+
+    {/* Nama */}
+    <input
+      type="text"
+      value={selectedProduct.name}
+      onChange={(e) =>
+        setSelectedProduct({
+          ...selectedProduct,
+          name: e.target.value,
+        })
+      }
+      className="border p-2 rounded w-full mb-3"
+    />
+
+    {/* Harga */}
+    <input
+      type="number"
+      value={selectedProduct.price}
+      onChange={(e) =>
+        setSelectedProduct({
+          ...selectedProduct,
+          price: Number(e.target.value),
+        })
+      }
+      className="border p-2 rounded w-full mb-3"
+    />
+
+    {/* Stok */}
+    <input
+      type="number"
+      value={selectedProduct.stock}
+      onChange={(e) =>
+        setSelectedProduct({
+          ...selectedProduct,
+          stock: Number(e.target.value),
+        })
+      }
+      className="border p-2 rounded w-full mb-3"
+    />
+
+    {/* Diskon */}
+    <input
+      type="number"
+      value={selectedProduct.discount}
+      onChange={(e) =>
+        setSelectedProduct({
+          ...selectedProduct,
+          discount: Number(e.target.value),
+        })
+      }
+      className="border p-2 rounded w-full mb-3"
+    />
+
+    {/* Category */}
+    <select
+      value={selectedProduct.category}
+      onChange={(e) =>
+        setSelectedProduct({
+          ...selectedProduct,
+          category: e.target.value,
+        })
+      }
+      className="border p-2 rounded w-full mb-4"
+    >
+      {categories.map((cat) => (
+        <option key={cat}>{cat}</option>
+      ))}
+    </select>
+
+    {/* Tombol Update */}
+    <button
+      onClick={handleUpdateProduct}
+      className="bg-green-600 text-white px-4 py-2 rounded"
+    >
+      Update
+    </button>
+  </div>
+)}
 
     </div>
   )

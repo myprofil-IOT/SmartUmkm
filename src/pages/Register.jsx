@@ -40,15 +40,33 @@ function Register() {
       return
     }
 
-    const newUser = {
-      username: form.name,
-      email: form.email,
-      role: "user"
-    }
+    const existingUsers = JSON.parse(localStorage.getItem("users")) || []
 
-    login(newUser)
-    navigate("/")
+  const emailExists = existingUsers.some(
+    (user) => user.email === form.email
+  )
+
+  if (emailExists) {
+    setError("Email sudah terdaftar")
+    return
   }
+
+  const newUser = {
+  id: Date.now(),          
+  name: form.name,        
+  email: form.email,
+  password: form.password,
+  role: "user"
+}
+
+  const updatedUsers = [...existingUsers, newUser]
+
+  localStorage.setItem("users", JSON.stringify(updatedUsers))
+  localStorage.setItem("currentUser", JSON.stringify(newUser))
+
+  login(newUser)
+  navigate("/")
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 transition-colors pt-20">
